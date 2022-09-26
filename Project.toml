@@ -2,3 +2,16 @@ name = "ProbabilisticEchoInversion"
 uuid = "1f6a33d4-8dbe-4644-aee6-8f897f240d65"
 authors = ["Sam Urmy <sam.urmy@noaa.gov>"]
 version = "0.1.0"
+
+[deps]
+DimensionalData = "0703355e-b756-11e9-17c0-8b28908087d0"
+Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
