@@ -36,12 +36,16 @@ end
 par = (TS = TS,)
 data = first(iterspectra(echogram))
 mod = examplemodel(data, par)
-solver = MCMCSolver(nsamples=500, kwargs=(progress=false,))
+solver = MCMCSolver(nsamples=100, kwargs=(progress=false,))
 
-solve(data, examplemodel, MCMCSolver(), par)
+solve(data, examplemodel, MCMCSolver(verbose=true), par)
 solve(data, examplemodel, solver, par)
+
+solve(data, examplemodel, MAPSolver(), par)
 
 result = apes(echogram, examplemodel, solver, params=par, result_handler=mean)
 result = apes(echogram, examplemodel, solver, params=par, result_handler=mean, safe_precision=false)
+result = apes(echogram, examplemodel, MAPSolver(), params=par)
+
 @test size(result, 1) == size(echogram, 1)
 @test size(result, 2) == size(echogram, 2)

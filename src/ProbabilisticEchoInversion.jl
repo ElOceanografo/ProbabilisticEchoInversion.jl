@@ -3,7 +3,7 @@ module ProbabilisticEchoInversion
 using DimensionalData, DimensionalData.Dimensions
 using Turing
 using Optim
-using Statistics
+using Statistics, StatsBase
 using DoubleFloats
 using ProgressMeter
 import Logging
@@ -11,6 +11,7 @@ import Logging
 export F,
     AbstractSolver,
     MCMCSolver,
+    MAPSolver,
     solve,
     iterspectra,
     mapspectra,
@@ -25,7 +26,9 @@ abstract type AbstractSolver end
     MCMCSolver([;sampler, nsamples, args, kwargs, verbose])
 
 Construct an `MCMCSolver`, specifying how to invert a probabilistic backscattering
-model using Markov-chain Monte Carlo. 
+model using Markov-chain Monte Carlo. By default uses the no-U-turn sampler with 
+acceptance rate 0.8 and collects 1000 samples. See Turing.jl documentation for more
+information on options for MCMC sampling.
 """
 Base.@kwdef struct MCMCSolver <: AbstractSolver
     sampler = NUTS(0.8)
@@ -35,10 +38,18 @@ Base.@kwdef struct MCMCSolver <: AbstractSolver
     verbose = false
 end
 
+"""
+    MAPSolver([;optimizer, options])
+
+Construct a `MAPSolver`, specifying how to invert a probabilistic backsattering
+model using maximum a-posteriori optimization.  Default optimizer is L-BFGS. See
+Turing.jl and Optim.jl documentation for more information on available solvers
+and options.
+"""
 Base.@kwdef struct MAPSolver <: AbstractSolver
-
+    optimizer = LBFGS()
+    options = Optim.Options()
 end
-
 
 """
     solve(data, model, solver[, params])
@@ -56,6 +67,11 @@ function solve(data, model::Function, solver::MCMCSolver, params=())
         sample(m, solver.sampler, solver.nsamples, solver.args...; solver.kwargs...)
     end
     return chain
+end
+
+function solve(data, model::Function, solver::MAPSolver, params=())
+    m = model(data, params)
+    optimize(m, MAP(), solver.optimizer, solver.options)
 end
 
 """
@@ -150,7 +166,5 @@ function apes(echogram::DimArray, model::Function, solver::AbstractSolver;
     end
     return mapspectra(f, echogram)
 end
-
-
 
 end # module
