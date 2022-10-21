@@ -4,6 +4,7 @@ using DimensionalData, DimensionalData.Dimensions
 using Turing
 using Optim
 using Statistics, StatsBase
+using Distributed
 using DoubleFloats
 using ProgressMeter
 import Logging
@@ -102,15 +103,19 @@ function iterspectra(echogram::DimArray, freqdim=:F)
 end
 
 """
-    mapspectra(f, echogram[, freqdim])
+    mapspectra(f, echogram[; freqdim, distributed])
 
 Map the function `f` over each spectrum in the `DimArray` `echogram`. By default
 assumes the acoustic frequencies are recorded in dimension `:F`, if this is not
 the case, specify the name of the dimension using the `freqdim` argument.
 """
-function mapspectra(f, echogram::DimArray, freqdim=:F)
+function mapspectra(f, echogram::DimArray; freqdim=:F, distributed=false)
     itr = iterspectra(echogram, freqdim)
-    result = @showprogress map(f, itr)
+    if distributed
+        result = @showprogress pmap(f, itr)
+    else
+        result = @showprogress map(f, itr)
+    end
     dd = otherdims(echogram, freqdim)
     return DimArray(result, dd)
 end
@@ -125,7 +130,7 @@ end
 
 
 """
-    apes(echogram, model, solver[; params, result_handler, safe_precision])
+    apes(echogram, model, solver[; params, result_handler, safe_precision, distributed])
 
 Run the automatic probabilistic echo solver defined by the inverse `model` and 
 solution method `solver` on the acoustic backstter data in `echogram`.
@@ -149,6 +154,8 @@ solution method `solver` on the acoustic backstter data in `echogram`.
     enough to introduce floating-point errors. If so, convert them to higher-
     precision representation (default is `Double64`). Setting this to false can 
     speed up the calculations, but may introduce inference errors.
+- `distributed::Bool=false`: Whether to use all available processors when 
+    fitting model to echogram cells.
 
 # Details
 
@@ -162,14 +169,14 @@ must accept two arguments:
     auxiliary information used by the model.
 """
 function apes(echogram::DimArray, model::Function, solver::AbstractSolver; 
-        params=(), result_handler=(x)->x, safe_precision=true)
+        params=(), result_handler=(x)->x, safe_precision=true, distributed=false)
     # numerical precision check here?
     # parallel options?
     function f(x)
         res = solve(x, model, solver, params)
         return result_handler(res)
     end
-    return mapspectra(f, echogram)
+    return mapspectra(f, echogram, distributed=distributed)
 end
 
 end # module
