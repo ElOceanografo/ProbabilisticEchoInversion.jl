@@ -23,7 +23,7 @@ export F,
 abstract type AbstractSolver end
 
 """
-    MCMCSolver([;sampler, nsamples, args, kwargs, verbose])
+    MCMCSolver([;sampler, parallel, nsamples, nchains; kwargs, verbose])
 
 Construct an `MCMCSolver`, specifying how to invert a probabilistic backscattering
 model using Markov-chain Monte Carlo. By default uses the no-U-turn sampler with 
@@ -32,11 +32,13 @@ information on options for MCMC sampling.
 """
 Base.@kwdef struct MCMCSolver <: AbstractSolver
     sampler = NUTS(0.8)
+    parallel = MCMCSerial()
     nsamples = 1000
-    args = ()
+    nchains = 1
     kwargs = ()
     verbose = false
 end
+
 
 """
     MAPSolver([;optimizer, options])
@@ -60,12 +62,17 @@ spectrum in `data`, using `solver` as the inference engine.
 function solve(data, model::Function, solver::MCMCSolver, params=())
     m = model(data, params)
     if solver.verbose
-        return sample(m, solver.sampler, solver.nsamples, solver.args...; solver.kwargs...)
+        return sample(m, solver.sampler, solver.parallel, solver.nsamples, 
+            solver.nchains; solver.kwargs...)
     end
-    logger = Logging.SimpleLogger(Logging.Error)
+    io = IOBuffer()
+    logger = Logging.SimpleLogger(io, Logging.Error)
     chain = Logging.with_logger(logger) do
-        sample(m, solver.sampler, solver.nsamples, solver.args...; solver.kwargs...)
+        return sample(m, solver.sampler, solver.parallel, solver.nsamples, 
+            solver.nchains; solver.kwargs...)
     end
+    flush(io)
+    close(io)
     return chain
 end
 
@@ -109,10 +116,9 @@ function mapspectra(f, echogram::DimArray, freqdim=:F)
 end
 
 function check_precision(data, T=Double64)
+    backscatter = data.backscatter
     if any(abs.(data.backscatter) .< sqrt(eps(eltype(data.backscatter))))
         bacscatter = T.(data.backscatter)
-    else
-        backscatter = data.backscatter
     end
     return (coords = data.coords, freqs=data.freqs, backscatter)
 end
@@ -160,7 +166,6 @@ function apes(echogram::DimArray, model::Function, solver::AbstractSolver;
     # numerical precision check here?
     # parallel options?
     function f(x)
-        x = safe_precision ? check_precision(x) : x
         res = solve(x, model, solver, params)
         return result_handler(res)
     end

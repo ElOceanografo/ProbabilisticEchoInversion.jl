@@ -1,18 +1,13 @@
 using Test
 using ProbabilisticEchoInversion
 using DimensionalData
-using DoubleFloats
+using Distributed
 using Statistics
 using Turing
 
+addprocs()
+
 echogram = rand(X(0:0.1:2), Z(-10:1:0), F(30:42))
-
-function mappointsslices(f, a, dims)
-    dd = otherdims(a, dims)
-    result = map(tup -> f(tup[1], a[tup[2]...]), zip(DimPoints(dd), DimKeys(dd)))
-    return DimArray(result, dd)
-end
-
 
 iterspectra(echogram)
 
@@ -39,6 +34,7 @@ mod = examplemodel(data, par)
 solver = MCMCSolver(nsamples=100, kwargs=(progress=false,))
 
 solve(data, examplemodel, MCMCSolver(verbose=true), par)
+solve(data, examplemodel, MCMCSolver(parallel=MCMCThreads(), nchains=4), par)
 solve(data, examplemodel, solver, par)
 
 solve(data, examplemodel, MAPSolver(), par)
