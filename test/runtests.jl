@@ -1,9 +1,9 @@
 using Distributed
-addprocs()
+addprocs(exeflags="--project=$(Base.active_project())")
 
 using ProbabilisticEchoInversion
 @everywhere begin
-    using Pkg; Pkg.activate(".")
+    # using Pkg; Pkg.activate(".")
     using Test
     using ProbabilisticEchoInversion
     using DimensionalData
@@ -46,7 +46,6 @@ solve(data, examplemodel, solver, par)
 solve(data, examplemodel, MAPSolver(), par)
 
 result = apes(echogram, examplemodel, solver, params=par, result_handler=mean)
-result = apes(echogram, examplemodel, solver, params=par, result_handler=mean, safe_precision=false)
 result = apes(echogram, examplemodel, solver, params=par, result_handler=mean, 
     safe_precision=false, distributed=true)
 result = apes(echogram, examplemodel, MAPSolver(), params=par)

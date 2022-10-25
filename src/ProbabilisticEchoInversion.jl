@@ -5,7 +5,6 @@ using Turing
 using Optim
 using Statistics, StatsBase
 using Distributed
-using DoubleFloats
 using ProgressMeter
 import Logging
 
@@ -16,7 +15,6 @@ export F,
     solve,
     iterspectra,
     mapspectra,
-    check_precision,
     apes
 
 @dim F YDim "Frequency (kHz)"
@@ -36,7 +34,7 @@ Base.@kwdef struct MCMCSolver <: AbstractSolver
     parallel = MCMCSerial()
     nsamples = 1000
     nchains = 1
-    kwargs = ()
+    kwargs = (progress=false,)
     verbose = false
 end
 
@@ -132,15 +130,6 @@ function mapspectra(f, echogram::DimArray; freqdim=:F, distributed=false)
     return DimArray(result, dd)
 end
 
-function check_precision(data, T=Double64)
-    backscatter = data.backscatter
-    if any(abs.(data.backscatter) .< sqrt(eps(eltype(data.backscatter))))
-        bacscatter = T.(data.backscatter)
-    end
-    return (coords = data.coords, freqs=data.freqs, backscatter)
-end
-
-
 """
     apes(echogram, model, solver[; params, result_handler, safe_precision, distributed])
 
@@ -162,10 +151,6 @@ solution method `solver` on the acoustic backstter data in `echogram`.
 - `params`: Optional additional params to pass to `model`.
 - `result_handler`: Optional function to transform the output of the solver 
     before (for instance, by calculating the means of a Markov chain).
-- `safe_precision::Bool=true`: Check whether backscatter absolute values are small
-    enough to introduce floating-point errors. If so, convert them to higher-
-    precision representation (default is `Double64`). Setting this to false can 
-    speed up the calculations, but may introduce inference errors.
 - `distributed::Bool=false`: Whether to use all available processors when 
     fitting model to echogram cells.
 
@@ -181,9 +166,8 @@ must accept two arguments:
     auxiliary information used by the model.
 """
 function apes(echogram::DimArray, model::Function, solver::AbstractSolver; 
-        params=(), result_handler=(x)->x, safe_precision=true, distributed=false)
+        params=(), result_handler=(x)->x, distributed=false)
     # numerical precision check here?
-    # parallel options?
     function f(x)
         res = solve(x, model, solver, params)
         return result_handler(res)
