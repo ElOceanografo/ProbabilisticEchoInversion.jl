@@ -52,6 +52,7 @@ and options.
 Base.@kwdef struct MAPSolver <: AbstractSolver
     optimizer = LBFGS()
     options = Optim.Options()
+    verbose=false
 end
 
 """
@@ -79,7 +80,16 @@ end
 
 function solve(data, model::Function, solver::MAPSolver, params=())
     m = model(data, params)
-    optimize(m, MAP(), solver.optimizer, solver.options)
+    if solver.verbose 
+        return optimize(m, MAP(), solver.optimizer, solver.options)
+    else
+        io = IOBuffer()
+        logger = Logging.SimpleLogger(io, Logging.Error)
+        opt = optimize(m, MAP(), solver.optimizer, solver.options)
+        flush(io)
+        close(io)
+    return opt
+    end
 end
 
 """
