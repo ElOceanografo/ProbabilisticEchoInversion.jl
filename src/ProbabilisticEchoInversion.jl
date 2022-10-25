@@ -85,7 +85,9 @@ function solve(data, model::Function, solver::MAPSolver, params=())
     else
         io = IOBuffer()
         logger = Logging.SimpleLogger(io, Logging.Error)
-        opt = optimize(m, MAP(), solver.optimizer, solver.options)
+        opt = Logging.with_logger(logger) do
+            optimize(m, MAP(), solver.optimizer, solver.options)
+        end
         flush(io)
         close(io)
     return opt
