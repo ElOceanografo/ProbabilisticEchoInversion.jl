@@ -169,8 +169,12 @@ function apes(echogram::DimArray, model::Function, solver::AbstractSolver;
         params=(), result_handler=(x)->x, distributed=false)
     # numerical precision check here?
     function f(x)
-        res = solve(x, model, solver, params)
-        return result_handler(res)
+        if all(ismissing.(x.backscatter))
+            return missing
+        else
+            res = solve(x, model, solver, params)
+            return result_handler(res)
+        end
     end
     return mapspectra(f, echogram, distributed=distributed)
 end
