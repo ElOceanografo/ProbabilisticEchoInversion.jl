@@ -44,10 +44,11 @@ solve(data, examplemodel, MCMCSolver(parallel=MCMCThreads(), nchains=4), par)
 solve(data, examplemodel, solver, par)
 
 solve(data, examplemodel, MAPSolver(), par)
+solve(data, examplemodel, MAPMCMCSolver(verbose=true), par)
 
 result = apes(echogram, examplemodel, solver, params=par, result_handler=mean)
-result = apes(echogram, examplemodel, solver, params=par, result_handler=mean, 
-    safe_precision=false, distributed=true)
+result = apes(echogram, examplemodel, solver, params=par, result_handler=mean,
+    distributed=true)
 result = apes(echogram, examplemodel, MAPSolver(), params=par)
 result = apes(echogram, examplemodel, MAPSolver(), params=par, distributed=true)
 

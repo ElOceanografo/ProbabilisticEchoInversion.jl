@@ -12,6 +12,7 @@ export F,
     AbstractSolver,
     MCMCSolver,
     MAPSolver,
+    MAPMCMCSolver,
     solve,
     iterspectra,
     mapspectra,
@@ -54,6 +55,29 @@ Base.@kwdef struct MAPSolver <: AbstractSolver
 end
 
 """
+    MAPMCMCSolver([;optimizer, options])
+
+Construct an `MAPMCMCSolver`, specifying how to invert a probabilistic backscattering
+model using a combination of maximum a posteriori optimization and Markov-chain Monte 
+Carlo. This simply means that an optimization routine finds the MAP point estimate of
+the parameters, which is then used as the starting point for the MCMC run.
+
+Arguments correspond exactly to the ones for `MAPSolver` and `MCMCSolver`; refer to 
+their documentation for details.
+"""
+Base.@kwdef struct MAPMCMCSolver <: AbstractSolver
+    sampler = NUTS(0.8)
+    parallel = MCMCSerial()
+    nsamples = 1000
+    nchains = 1
+    kwargs = (progress=false,)
+    optimizer = LBFGS()
+    options = Optim.Options()
+    verbose=false
+end
+
+
+"""
     solve(data, model, solver[, params])
 
 Run the probabilistic inverse model defined by `model` on the acoustic backscatter
@@ -68,7 +92,7 @@ function solve(data, model::Function, solver::MCMCSolver, params=())
     io = IOBuffer()
     logger = Logging.SimpleLogger(io, Logging.Error)
     chain = Logging.with_logger(logger) do
-        return sample(m, solver.sampler, solver.parallel, solver.nsamples, 
+        sample(m, solver.sampler, solver.parallel, solver.nsamples, 
             solver.nchains; solver.kwargs...)
     end
     flush(io)
@@ -88,7 +112,27 @@ function solve(data, model::Function, solver::MAPSolver, params=())
         end
         flush(io)
         close(io)
-    return opt
+        return opt
+    end
+end
+
+function solve(data, model::Function, solver::MAPMCMCSolver, params=())
+    m = model(data, params)
+    if solver.verbose
+        opt = optimize(m, MAP(), solver.optimizer, solver.options)
+        return sample(m, solver.sampler, solver.parallel, solver.nsamples, solver.nchains;
+            init_theta = opt.values.array, solver.kwargs...)
+    else
+        io = IOBuffer()
+        logger = Logging.SimpleLogger(io, Logging.Error)
+        chain = Logging.with_logger(logger) do
+            opt = optimize(m, MAP(), solver.optimizer, solver.options)
+            sample(m, solver.sampler, solver.parallel, solver.nsamples, solver.nchains;
+                init_theta=opt.values.array, solver.kwargs...)
+        end
+        flush(io)
+        close(io)
+        return chain
     end
 end
 
@@ -167,7 +211,6 @@ must accept two arguments:
 """
 function apes(echogram::DimArray, model::Function, solver::AbstractSolver; 
         params=(), result_handler=(x)->x, distributed=false)
-    # numerical precision check here?
     function f(x)
         if all(ismissing.(x.backscatter))
             return missing
