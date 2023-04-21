@@ -6,11 +6,11 @@ DocMeta.setdocmeta!(ProbabilisticEchoInversion, :DocTestSetup, :(using Probabili
 makedocs(;
     modules=[ProbabilisticEchoInversion],
     authors="Sam Urmy <oceanographerschoice@gmail.com> and contributors",
-    repo="https://github.com/user/ProbabilisticEchoInversion.jl/blob/{commit}{path}#{line}",
+    repo="https://github.com/ElOceanografo/ProbabilisticEchoInversion.jl/blob/{commit}{path}#{line}",
     sitename="ProbabilisticEchoInversion.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
-        canonical="https://user.github.io/ProbabilisticEchoInversion.jl",
+        canonical="https://ElOceanografo.github.io/ProbabilisticEchoInversion.jl",
         edit_link="main",
         assets=String[],
     ),
@@ -20,6 +20,6 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/user/ProbabilisticEchoInversion.jl",
+    repo="github.com/ElOceanografo/ProbabilisticEchoInversion.jl",
     devbranch="main",
 )
