@@ -54,12 +54,9 @@ $\mathbf{n} \ge 0$ which solves the equation
 $\mathbf{s}_v = \Sigma \mathbf{n}.$ (2)
 
 The inverse approach has several advantages over the classify-then-integrate approach:
-* It uses all available frequency information to integrate, in theory giving a more 
-robust estimate of animal density than single-frequency integration.
-* It extends naturally from a small number of narrowband frequencies to broadband 
-spectra, or a mixture of the two.
-* It can handle mixtures of different scatterers, a situation where dB differencing
-struggles.
+* It uses all available frequency information to integrate, in theory giving a more robust estimate of animal density than single-frequency integration.
+* It extends naturally from a small number of narrowband frequencies to broadband spectra, or a mixture of the two.
+* It can handle mixtures of different scatterers, a situation where dB differencing struggles.
 
 However, even though the inverse approach has been around for some time, it has never
 acheived widespread use in practice, because Equation 2 is often (if not usually)
