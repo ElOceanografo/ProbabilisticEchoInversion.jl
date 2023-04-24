@@ -165,12 +165,10 @@ flexible in terms of the data and situations to which it can be applied. For a m
 depth look at some of its capabilities, please check out the fully-worked example 
 problems in the [APESExamples repository](https://github.com/ElOceanografo/APESExamples).
 These reproduce the analyses and figures in Urmy et al. 20**, and include:
-* A simulated fish/zooplankton mixture, demonstrating how to solve simultaneously for 
-scatterer size and density,
-* A simulated mesopelagic scattering layer, demonstrating how to use ground-truth data to
-constrain the solution of an underdetermined inverse problem,
+* A simulated fish/zooplankton mixture, demonstrating how to solve simultaneously for scatterer size and density,
+* A simulated mesopelagic scattering layer, demonstrating how to use ground-truth data to constrain the solution of an underdetermined inverse problem,
 * An application of APES to a variety of mixed scattering types at the Aleutian shelfbreak
-in the Gulf of Alaska,
+in the Gulf of Alaska, 
 * And an application of APES to broadband backscatter from zooplankton and fish of mixed 
 sizes in Barnabas Trough, south of Kodiak Island.
 
