@@ -1,7 +1,7 @@
 name = "ProbabilisticEchoInversion"
 uuid = "1f6a33d4-8dbe-4644-aee6-8f897f240d65"
 authors = ["Sam Urmy <sam.urmy@noaa.gov>"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 DimensionalData = "0703355e-b756-11e9-17c0-8b28908087d0"
