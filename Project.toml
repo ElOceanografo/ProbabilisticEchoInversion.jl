@@ -18,6 +18,7 @@ Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
 [compat]
 Distributions = "0.25"
 DoubleFloats = "1"
+ProgressMeter = "1"
 StatsBase = "0.33"
 Turing = "0.24"
 
