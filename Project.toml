@@ -22,7 +22,7 @@ DoubleFloats = "1"
 Optim = "1"
 ProgressMeter = "1"
 StatsBase = "0.33"
-Turing = "0.24"
+Turing = "0.24, 0.25"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
