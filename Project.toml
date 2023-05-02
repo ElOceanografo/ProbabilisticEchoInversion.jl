@@ -21,7 +21,7 @@ Distributions = "0.25"
 DoubleFloats = "1"
 Optim = "1"
 ProgressMeter = "1"
-StatsBase = "0.33"
+StatsBase = "0.33, 0.34"
 Turing = "0.24, 0.25"
 
 [extras]
