@@ -54,3 +54,9 @@ result = apes(echogram, examplemodel, MAPSolver(), params=par, distributed=true)
 
 @test size(result, 1) == size(echogram, 1)
 @test size(result, 2) == size(echogram, 2)
+
+mean.(result)
+cov.(result)
+var.(result)
+std.(result)
+cv.(result)

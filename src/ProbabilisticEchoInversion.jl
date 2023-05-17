@@ -3,6 +3,9 @@ module ProbabilisticEchoInversion
 using DimensionalData, DimensionalData.Dimensions
 using Turing
 using Optim
+using ForwardDiff
+using FiniteDiff
+using LinearAlgebra
 using Statistics, StatsBase
 using Distributed
 using ProgressMeter
@@ -16,7 +19,8 @@ export F,
     solve,
     iterspectra,
     mapspectra,
-    apes
+    apes,
+    cv
 
 @dim F YDim "Frequency (kHz)"
 
@@ -44,14 +48,23 @@ end
     MAPSolver([;optimizer, options])
 
 Construct a `MAPSolver`, specifying how to invert a probabilistic backsattering
-model using maximum a-posteriori optimization.  Default optimizer is L-BFGS. See
+model using maximum a-posteriori optimization.  Default optimizer is LBFGS. See
 Turing.jl and Optim.jl documentation for more information on available solvers
 and options.
 """
 Base.@kwdef struct MAPSolver <: AbstractSolver
     optimizer = LBFGS()
     options = Optim.Options()
+    hessian = :forwarddiff
     verbose=false
+
+    function MAPSolver(optimizer, options, hessian, verbose)
+        if hessian in [:forwarddiff, :finitediff]
+            return new(optimizer, options, hessian, verbose)
+        else
+            throw(ArgumentError("`hessian` must be either :forwarddiff or :finitediff"))
+        end
+    end
 end
 
 """
@@ -100,10 +113,29 @@ function solve(data, model::Function, solver::MCMCSolver, params=())
     return chain
 end
 
+function calculate_hessian(opt, solver)
+    if solver.hessian == :forwarddiff
+        return ForwardDiff.hessian(opt.f, opt.optim_result.minimizer)
+    elseif solver.hessian == :finitediff
+        return ForwardDiff.hessian(opt.f, opt.optim_result.minimizer)
+    end
+end
+
+struct MAPSolution{TP<:AbstractMvNormal, TO}
+    posterior::TP
+    optimizer::TO
+end
+
+Statistics.mean(s::MAPSolution) = mean(s.posterior)
+Statistics.cov(s::MAPSolution) = cov(s.posterior)
+Statistics.var(s::MAPSolution) = var(s.posterior)
+Statistics.std(s::MAPSolution) = sqrt.(var(s))
+cv(s::MAPSolution) = std(s) ./ mean(s)
+
 function solve(data, model::Function, solver::MAPSolver, params=())
     m = model(data, params)
     if solver.verbose 
-        return optimize(m, MAP(), solver.optimizer, solver.options)
+        opt = optimize(m, MAP(), solver.optimizer, solver.options)
     else
         io = IOBuffer()
         logger = Logging.SimpleLogger(io, Logging.Error)
@@ -112,8 +144,10 @@ function solve(data, model::Function, solver::MAPSolver, params=())
         end
         flush(io)
         close(io)
-        return opt
     end
+    H = Symmetric(calculate_hessian(opt, solver))
+    posterior = MvNormal(opt.optim_result.minimizer, inv(H))
+    return MAPSolution(posterior, opt)
 end
 
 function solve(data, model::Function, solver::MAPMCMCSolver, params=())
