@@ -114,7 +114,7 @@ julia> cd("APESTutorial")
 julia> ]
 
 # activate the current directory as project environment
-(@v1.8) pkg> activate .
+(@v1.9) pkg> activate .
 
 (APESTutorial) pkg>
 ```
@@ -133,7 +133,7 @@ Load the package, and you're ready to go!
 julia> using ProbabilisticEchoInversion
 ```
 [^2] You don't strictly need to create a local environment, and can install 
-ProbabilisticEchoInversion into the top-level Julia environment (i.e., `(@v1.8)` instead 
+ProbabilisticEchoInversion into the top-level Julia environment (i.e., `(@v1.9)` instead 
 of `APESTutorial`). This will make it available automatically for all projects. However,
 the more packages you install in the top-level environment, the more likely you are to end
 up with conflicting versions and dependencies. In our experience, working with local
