@@ -1,7 +1,10 @@
 module ProbabilisticEchoInversion
 
+using Reexport
+using CSV
+using DataFrames, DataFramesMeta
 using DimensionalData, DimensionalData.Dimensions
-using Turing
+@reexport using Turing
 using Optim
 using ForwardDiff
 using FiniteDiff
@@ -11,8 +14,7 @@ using Distributed
 using ProgressMeter
 import Logging
 
-export F,
-    AbstractSolver,
+export AbstractSolver,
     MCMCSolver,
     MAPSolver,
     MAPMCMCSolver,
@@ -20,7 +22,9 @@ export F,
     iterspectra,
     mapspectra,
     apes,
-    cv
+    cv,
+    unstack_echogram,
+    F
 
 @dim F YDim "Frequency (kHz)"
 
@@ -121,9 +125,12 @@ function calculate_hessian(opt, solver)
     end
 end
 
-struct MAPSolution{TP<:AbstractMvNormal, TO}
+struct MAPSolution{TP<:AbstractMvNormal}
     posterior::TP
-    optimizer::TO
+    optimizer
+end
+
+function Base.show(io::IO, s::MAPSolution)
 end
 
 Statistics.mean(s::MAPSolution) = mean(s.posterior)
@@ -185,7 +192,7 @@ function iterspectra(echogram::DimArray, freqdim=:F)
     freqs = collect(dims(echogram, freqdim))
     dd = otherdims(echogram, freqdim)
     pointskeys = zip(DimPoints(dd), DimKeys(dd))
-    itr = ((coords=tup[1], freqs=freqs, backscatter=@view echogram[tup[2]...]) 
+    itr = ((coords=tup[1], freqs=freqs, backscatter=@view echogram[tup[2]...])
         for tup in pointskeys)
     return itr
 end
@@ -256,4 +263,23 @@ function apes(echogram::DimArray, model::Function, solver::AbstractSolver;
     return mapspectra(f, echogram, distributed=distributed)
 end
 
+
+function unstack_echogram(echo_df::DataFrame, xcol::Symbol, ycol::Symbol, fcol::Symbol, svcol::Symbol, 
+    # ::Type{X}, ::Type{Y}, ::Type{F}) where {X<:Dimension, Y<:Dimension, F<:Dimension}
+    X=X, Y=Y, F=F)
+    freqs = sort(unique(echo_df[:, fcol]))
+    x = sort(unique(echo_df[:, xcol]))
+    y = sort(unique(echo_df[:, ycol]))
+    stack = map(freqs) do f 
+        @chain echo_df begin
+            subset(fcol => x -> x .== f)
+            unstack(ycol, xcol, svcol)
+            sort(ycol)
+            select(Not(ycol))
+            Array()
+        end
+    end
+    echogram = cat(stack..., dims=3)
+    return DimArray(echogram, (Y(y), X(x), F(freqs)))
+end
 end # module
