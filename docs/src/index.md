@@ -204,6 +204,7 @@ about how to slice and dice `DimArrays`.
 ```julia
 heatmap(echo[F(At(120))], yflip=true)
 ```
+![Echogram of example data at 120 kHz](https://github.com/ElOceanografo/ProbabilisticEchoInversion.jl/blob/main/examples/echogram.png?raw=true)
 
 ### Defining the model
 
