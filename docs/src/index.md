@@ -293,7 +293,7 @@ This is done by changing the solver argument to `MAPSolver()`. Inference in this
 takes just a few seconds.
 
 ```julia
-solution_map = apes(echo, examplemodel, MapSolver(), params=params)
+solution_map = apes(echo, examplemodel, MAPSolver(), params=params)
 ```
 
 In either case (MCMC chains or optimization fits) the results are returned in a `DimArray`
