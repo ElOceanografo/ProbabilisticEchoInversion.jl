@@ -82,7 +82,7 @@ acoustic data.
 
 ## Tutorial
 
-### Installation
+### Installation and setup
 
 ProbabilisticEchoInversion.jl is a Julia package, so if you have not installed the Julia 
 programming language, that's the first thing to do. You can download the latest version
@@ -97,7 +97,7 @@ we can recommend [Visual Studio Code](https://code.visualstudio.com/) with the
 [Pluto](https://plutojl.org/).
 
 Once you have Julia installed, open the Julia command line (a.k.a. the read-evaluate-print-loop,
-or REPL). While not required, it is easy and highly recommended to set up a local environment[^2] 
+or REPL). While not required, it is easy and highly recommended to set up a local environment[^1] 
 for each of your projects. To do that for this tutorial, run the following commands:
 
 ```julia
@@ -124,12 +124,12 @@ command:
 ```
 
 Once it has downloaded and precompiled, you can exit the package manager by hitting backspace.
-Load the package, and you're ready to go!
+To run the rest of this tutorial yourself, you'll need the data files located
+[here](https://github.com/ElOceanografo/ProbabilisticEchoInversion.jl/tree/main/examples).
+Download them to the project directory you just created. You can also download the `example.jl`
+script, which contains all the following code in one place.
 
-```julia
-julia> using ProbabilisticEchoInversion
-```
-[^2] You don't strictly need to create a local environment, and can install 
+[^1] You don't strictly need to create a local environment, and can install 
 ProbabilisticEchoInversion into the top-level Julia environment (i.e., `(@v1.9)` instead 
 of `APESTutorial`). This will make it available automatically for all projects. However,
 the more packages you install in the top-level environment, the more likely you are to end
@@ -140,20 +140,173 @@ are recorded automatically in the Project.toml and Manifest.toml files.
 
 ### Loading and arranging your data
 
-In a nutshell, you arrange your acoustic data in a multidimensional `DimArray` from 
-DimensionalData.jl.[^1] For a typical downard-looking echosounder on a moving ship, your 
-data would have three dimensions, depth x distance x frequency. You then specify the inverse 
-problem you want to solve using the modeling language Turing.jl, and then use 
-ProbabilisticEchoInversion to apply it to each depth/distance cell in your data.
+ProbabilisticEchoInversion expects your acoustic data to be arranged in a multidimensional
+`DimArray` from DimensionalData.jl. `DimArray`s behave like normal Julia arrays, but also 
+let you index with named dimensions and have a bunch of nice functionality for subsetting,
+slicing, and plotting. For a typical downard-looking echosounder on a moving ship, your 
+data have three dimensions - depth, distance, and frequency - meaning this array will be 
+three-dimensional.
 
+If your data are already stored this way, for instance in a NetCDF or .mat file, it will
+be easy to convert them to a `DimArray` (refer to the
+[DimensionalData.jl documentation](https://rafaqz.github.io/DimensionalData.jl/stable/course/)
+for how to do that). If your data are stored as a table in "long" format, as is typical
+for .CSV exports from Echoview, you will need to do some reshaping first. This package
+provides a function `unstack_echogram` to do that for you.
 
-[^1] (`DimArray`s behave like normal Julia arrays, but also 
-let you index with named dimensions and have a bunch of nice functionality for subsetting
-and plotting.) 
+First, load the required packages.
+```julia
+using ProbabilisticEchoInversion
+using CSV, DataFrames
+using DimensionalData, DimensionalData.Dimensions
+```
+
+There are five comma-delimited data files, one for each frequency. We read them in, add a
+`frequency` column to each one, and use `vcat` to stack them all into a single `DataFrame`.
+```julia
+freqs = [18, 38, 70, 120, 200]
+echo_df = map(freqs) do f
+    filename = joinpath(@__DIR__, "DY1702_haul24_$(f)kHz.csv")
+    df = CSV.read(filename, DataFrame)
+    df[!, :frequency] .= f
+    return df
+end
+echo_df = vcat(echo_df...)
+```
+Next, we'll transform this data frame into a 3-d `DimArray`. The `unstack_echogram`
+function takes long-format a `DataFrame` as its first argument. That `DataFrame`
+needs to have at least four columns:
+
+1. An x-coordinate, such as along-track distance or time
+2. A y-coordinate, such as depth or range from the transducer
+3. Acoustic frequency, and
+4. Acoustic mean volume backscatter (can be in linear or decibel units )
+
+The names of these columns are passed to `unstack_echogram` as the second through
+fifth arguments, respectively. In this example, the data files are standard .csv
+exports from Echoview, and the relevant column names are:
+```julia
+echo = unstack_echogram(echo_df, :Dist_M, :Layer_depth_min, :frequency, :Sv_mean)
+```
+By default, the axes of `echo` will be named `X`, `Y`, and `F`. If you'd like to 
+define your own dimensions, this is easy to do with the `@dim` macro from
+`DimensionalData.Dimensions`. You can then supply them in the optional final
+three arguments to `unstack_echogram` and they will be applied to the 
+`DimArray` it returns.
+```julia
+@dim Z YDim "Depth (m)"
+@dim D XDim "Distance (km)"
+echo = unstack_echogram(echo_df, :Dist_M, :Layer_depth_min, :frequency, :Sv_mean, D, Z)
+```
+It is now easy to manipulate the multifrequency echogram, for instance by selecting a 
+slice by frequency and plotting it. Refer to the DimensionalData.jl docs to learn more
+about how to slice and dice `DimArrays`.
+```julia
+heatmap(echo[F(At(120))], yflip=true)
+```
 
 ### Defining the model
 
-### 
+Once the data are loaded in, we need to define the inverse model we want to solve.
+This is done using the probabilistic programming language Turing.jl. If you are familiar
+with BUGS, JAGS, or Stan, model definitions in Turing are conceptually very similar. If 
+you have not worked with it before, it is worth studying the Turing 
+[documentation](https://turinglang.org/dev/docs/using-turing/get-started) before going
+any further.
+
+A very simple inverse model is defined below.
+
+```julia
+@model function examplemodel(data, params)
+
+    nfreq, nspp = size(params.TS)
+    Σ = exp10.(params.TS ./ 10)
+
+    # define priors
+    logn ~ arraydist(Normal.(zeros(nspp), fill(3, nspp))) # scatterer log-densities
+    ϵ ~ Exponential(1.0) # observation error variance
+
+    # Predict Sv based on scatterer density and TS
+    n = exp10.(logn)
+    μ = 10log10.(Σ * n)
+
+    # Compare observed to predicted backscatter
+    data.backscatter .~ Normal.(μ, fill(ϵ, nfreq))
+end
+
+```
+To work with APES, your model function must accept two arguments. The first, `data`, 
+contains the observed acoustic data. It will be a `NamedTuple` with fields named `coords`,
+`freqs`, and `backscatter` that gets generated automatically for each acoustic cell When
+you call the `apes` function to actually run the analysis. You can use any of these
+fields inside the model if you want, but `data.backscatter` is the most important, since
+it contains the actual observations.
+
+The second argument, `params` containins any constants or auxiliary information you want to
+pass to the model. It will typically be a `NamedTuple`, but can be any type of object. If
+your model doesn't need any other info, you can just supply an empty tuple `()`.
+Here, `params` is going to hold a single item, a matrix of target strengths (TS).
+
+This model assumes a fixed number of scattering classes are present, each with a known
+TS spectrum. It puts a vague prior on their log-densities, and assumes a single error
+variance for all frequencies. 
+
+> ⚠ Note that this model is defined in the logarithmic domain - that is, the scatterer
+> densities are written as log-densities, and the observed data are assumed to be 
+> decibel-valued mean volume backscattering strengths ($S_v$) instead of linear mean
+> volume backscattering coefficients ($s_v$). While not strictly required, defining
+> your models this way is a *really good idea*. The small absolute values and wide
+> ranges of both scatterer densities and observed backscatter means that linear-domain
+> models often have problems with floating-point precision that can manifest in
+> inefficient and/or incorrect inference.
+
+The last task to set up our model is to choose our candidate scatterers and set up
+the TS matrix we are going to pass to the model via `params`. A research trawl performed
+at this location found a mixture of Alaska pollock (*Gadus chalcogrammus*), unidentified
+lanternfish, and Pacific glass shrimp (*Pasiphaea pacifica*). We will assume these were
+the main scatterers present and define three TS spectra at our five frequencies. We then 
+concatenate them into a matrix and pack it into our named tuple of parameters.
+
+```julia
+TS_shrimp = [-100, -90, -82, -76.2, -73.7]
+TS_pollock = [-34.6, -35.0, -35.6, -36.6, -38.5]
+TS_myctophid = [-73.0, -58.0, -65, -67.2, -70.0]
+TS = [TS_pollock TS_myctophid TS_shrimp]
+params = (; TS)
+```
+
+### Running the model
+
+Once the data, parameters, and model are all set up, running it is just one line of code.
+
+```julia
+solution_mcmc = apes(echo, examplemodel, MCMCSolver(), params=params)
+```
+This will draw 1,000 samples from the joint posterior of the model for each acoustic cell,
+using the No-U-Turn Sampler (NUTS) from Turing. Any cells where all backscatter values
+are `missing` (e.g., below-bottom cells) will be skipped. Altogether, the inference will
+take on the order of 5-20 minutes to finish, depending on your machine.
+
+If you don't have time to wait for (asymptotically) exact inference, you can opt for a much
+faster option: maximum-a-posteriori optimization, with errors estimated via the delta method.
+This is done by changing the solver argument to `MAPSolver()`. Inference in this case
+takes just a few seconds.
+
+```julia
+solution_map = apes(echo, examplemodel, MapSolver(), params=params)
+```
+
+In either case (MCMC chains or optimization fits) the results are returned in a `DimArray`
+that shares the first two dimensions as `echo`, so they are also easy to manipulate and 
+plot. For instance, arrays of posterior means and standard deviations can be obtained this way,
+
+```julia
+post_mean = passmissing(mean).(solution_mcmc)
+post_mean = passmissing(std).(solution_mcmc)
+```
+
+where we use `passmissing` to deal with the fact that some of the result cells contain
+MCMC chains and some are missing.
 
 ## More Advanced Examples
 
