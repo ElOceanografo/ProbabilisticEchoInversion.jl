@@ -30,6 +30,7 @@ FiniteDiff = "2"
 ForwardDiff = "0.10"
 Optim = "1"
 ProgressMeter = "1"
+Reexport = "1"
 StatsBase = "0.33, 0.34"
 Turing = "0.24, 0.25"
 
