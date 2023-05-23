@@ -125,19 +125,25 @@ function calculate_hessian(opt, solver)
     end
 end
 
-struct MAPSolution{TP<:AbstractMvNormal}
-    posterior::TP
-    optimizer
+struct MAPSolution{TM,TV,TO}
+    mean::TM
+    cov::TV
+    optimizer::TO
 end
 
 function Base.show(io::IO, s::MAPSolution)
 end
 
-Statistics.mean(s::MAPSolution) = mean(s.posterior)
-Statistics.cov(s::MAPSolution) = cov(s.posterior)
-Statistics.var(s::MAPSolution) = var(s.posterior)
+Statistics.mean(s::MAPSolution) = s.mean
+Statistics.cov(s::MAPSolution) = s.cov
+function Statistics.cor(s::MAPSolution)
+    D = diagm(1 ./ sqrt.(diag(s.cov)))
+    return D * cov(s) * D
+end
+Statistics.var(s::MAPSolution) = diag(cov(s))
 Statistics.std(s::MAPSolution) = sqrt.(var(s))
-cv(s::MAPSolution) = std(s) ./ mean(s)
+cv(s) = std(s) ./ mean(s)
+StatsBase.coef(s::MAPSolution) = coef(s.optimizer)
 
 function solve(data, model::Function, solver::MAPSolver, params=())
     m = model(data, params)
@@ -153,8 +159,9 @@ function solve(data, model::Function, solver::MAPSolver, params=())
         close(io)
     end
     H = Symmetric(calculate_hessian(opt, solver))
-    posterior = MvNormal(opt.optim_result.minimizer, inv(H))
-    return MAPSolution(posterior, opt)
+    μ = opt.optim_result.minimizer
+    C = isposdef(H) ? inv(H) : pinv(H)
+    return MAPSolution(μ, C, opt)
 end
 
 function solve(data, model::Function, solver::MAPMCMCSolver, params=())
