@@ -160,8 +160,13 @@ function solve(data, model::Function, solver::MAPSolver, params=())
     end
     H = Symmetric(calculate_hessian(opt, solver))
     μ = opt.optim_result.minimizer
-    C = isposdef(H) ? inv(H) : pinv(H)
-    return MAPSolution(μ, C, opt)
+    try
+        C = isposdef(H) ? inv(H) : pinv(H)
+        return MAPSolution(μ, C, opt)
+    catch
+        C = diagm(fill(Inf, size(H, 1)))
+        return MAPSolution(μ, C, opt)
+    end
 end
 
 function solve(data, model::Function, solver::MAPMCMCSolver, params=())
