@@ -1,5 +1,5 @@
 using ProbabilisticEchoInversion
-using CSV, DataFrames, DataFramesMeta
+using CSV, DataFrames 
 using DimensionalData, DimensionalData.Dimensions
 using Plots
 
@@ -15,7 +15,7 @@ echo_df = vcat(echo_df...)
 
 @dim Z YDim "Depth (m)"
 @dim D XDim "Distance (km)"
-echo = unstack_echogram(echo_df, :Dist_M, :Layer_depth_min, :frequency, :Sv_mean, D, Z, F)
+echo = unstack_echogram(echo_df, :Dist_M, :Layer_depth_min, :frequency, :Sv_mean, D, Z)
 
 heatmap(echo[F(At(120))], yflip=true)
 savefig(joinpath(@__DIR__, "echogram.png"))
