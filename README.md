@@ -1,8 +1,8 @@
 # ProbabilisticEchoInversion.jl
 
+[![Build Status](https://github.com/ElOceanografo/ProbabilisticEchoInversion.jl/workflows/CI/badge.svg)](https://github.com/ElOceanografo/ProbabilisticEchoInversion.jl/actions?query=workflow%CI+branch%3Amain)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://ElOceanografo.github.io/ProbabilisticEchoInversion.jl/dev/)
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://ElOceanografo.github.io/ProbabilisticEchoInversion.jl/stable/)
-[![Build Status](https://github.com/user/ProbabilisticEchoInversion.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/user/ProbabilisticEchoInversion.jl/actions/workflows/CI.yml?query=branch%3Amain)
 
 This is a package for solving the "inverse problem" for multifrequency acoustic backscatter
 in a Bayesian probabilistic framework. In other words, given observed echoes from
