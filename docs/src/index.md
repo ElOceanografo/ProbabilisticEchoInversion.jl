@@ -100,7 +100,7 @@ Once you have Julia installed, open the Julia command line (a.k.a. the read-eval
 or REPL). While not required, it is easy and highly recommended to set up a local environment[^1] 
 for each of your projects. To do that for this tutorial, run the following commands:
 
-```julia
+```julia-repl
 # create a new folder--could call it whatever you want
 julia> mkdir("APESTutorial")
 
@@ -119,8 +119,8 @@ julia> ]
 Install the package to this new project environment from GitHub by running the following
 command:
 
-```julia
-(APESTutorial) pkg> add https://github.com/ElOceanografo/ProbabilisticEchoInversion.jl.git
+```julia-repl
+(APESTutorial) pkg> add ProbabilisticEchoInversion.jl
 ```
 
 Once it has downloaded and precompiled, you can exit the package manager by hitting backspace.
@@ -337,7 +337,9 @@ Pull requests are welcome, both for code and documentation!
 
 Finally, if you do use APES in your own work, please cite the following publication:
 
-TK
+Urmy, De Robertis, and Bassett (2023). A Bayesian inverse approach to identify and quantify
+organisms from fisheries acoustic data. ICES Journal of Marine Science x (x), doi:x
+
 
 ## API
 
