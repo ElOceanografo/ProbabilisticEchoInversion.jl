@@ -35,7 +35,7 @@ Optim = "1"
 ProgressMeter = "1"
 Reexport = "1"
 StatsBase = "0.33, 0.34"
-Turing = "0.24, 0.25"
+Turing = "0.24, 0.25, 0.26"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
