@@ -40,12 +40,15 @@ TS_myctophid = [-73.0, -58.0, -65, -67.2, -70.0]
 TS = [TS_pollock TS_myctophid TS_shrimp]
 params = (; TS)
 
+plot(freqs, TS, marker=:o, label=["Pollock" "Myctophid" "Shrimp"],
+    xlabel="Frequency (kHz)", ylabel="TS (dB re m⁻²)")
+savefig(joinpath(@__DIR__, "ts.png"))
+
 solution_mcmc = apes(echo, examplemodel, MCMCSolver(), params=params);
-post_mean = passmissing(mean).(solution_mcmc);
-post_cv = passmissing(cv).(solution_mcmc);
+post_mean = passmissing(chn -> mean(Array(chn), dims=2)).(solution_mcmc);
+post_cv = passmissing(chn -> cv(Array(chn), dims=2)).(solution_mcmc);
 
 solution_map = apes(echo, examplemodel, MAPSolver(), params=params);
 post_mean = passmissing(mean).(solution_map);
 post_cv = passmissing(cv).(solution_map);
-
 
