@@ -17,6 +17,7 @@ import Logging
 export AbstractSolver,
     MCMCSolver,
     MAPSolver,
+    MAPSolution,
     MAPMCMCSolver,
     solve,
     iterspectra,
@@ -132,6 +133,13 @@ struct MAPSolution{TM,TV,TO}
 end
 
 function Base.show(io::IO, s::MAPSolution)
+    print(io, s.optimizer.values)
+end
+
+function Base.show(io::IO, m::MIME"text/plain", s::MAPSolution)
+    print(io, "MAPSolution with log-probability $(round(s.optimizer.lp, digits=2))")
+    print(io, " and modal values:\n")
+    show(io, m, s.optimizer.values)
 end
 
 Statistics.mean(s::MAPSolution) = s.mean
@@ -142,7 +150,7 @@ function Statistics.cor(s::MAPSolution)
 end
 Statistics.var(s::MAPSolution) = diag(cov(s))
 Statistics.std(s::MAPSolution) = sqrt.(var(s))
-cv(s) = std(s) ./ mean(s)
+cv(s; kwargs...) = std(s; kwargs...) ./ mean(s; kwargs...)
 StatsBase.coef(s::MAPSolution) = coef(s.optimizer)
 
 function solve(data, model::Function, solver::MAPSolver, params=())
