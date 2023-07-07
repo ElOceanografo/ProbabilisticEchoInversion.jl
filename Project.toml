@@ -23,6 +23,9 @@ StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
 
 [compat]
+CSV = "0.10"
+DataFrames = "1"
+DataFramesMeta = "0.14"
 DimensionalData = "0.24"
 Distributions = "0.25"
 DoubleFloats = "1"
@@ -30,8 +33,9 @@ FiniteDiff = "2"
 ForwardDiff = "0.10"
 Optim = "1"
 ProgressMeter = "1"
+Reexport = "1"
 StatsBase = "0.33, 0.34"
-Turing = "0.24, 0.25"
+Turing = "0.24, 0.25, 0.26"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
