@@ -18,42 +18,42 @@ echoes from one or more types of scatterers, this package will help you infer
 
 We call this approach Automatic Probabilistic Echo Solving, or APES.
 
-This documentation provides a short introduction to the problem and the general
+This documentation provides a short introduction to the problem and general
 approach, as well as a simple tutorial on how to use the package. It assumes
 basic familiarity with the principles of fisheries acoustics and Bayesian
 statistical modeling (e.g. experience with Turing.jl, Stan, or JAGS). While the package
-is written in [Julia](https://julialang.org/), we don't assume knowledge of that language, and you should
-hopefully be able to follow along as long as you are familiar with scientific programming
-in a similar scripting language like R, Python, or Matlab. Extensive resources for learning
-Julia are available at the [official website](https://julialang.org/learning/).
+is written in [Julia](https://julialang.org/), we don't assume prior Julia knowledge,
+and you should hopefully be able to follow along if you are familiar with scientific
+programming in a similar scripting language like R, Python, or Matlab.  Extensive resources
+for learning Julia are available at the [official website](https://julialang.org/learning/).
 
 ### Background
 The typical approach in fisheries acoustics is to use relative differences in backscatter
-at multiple frequencies to classify regions of the water column as one thing or another
+strength at multiple frequencies to classify parts of the water column as one thing or another
 (fish vs. zooplankton, large vs. small fish, etc.). These frequency responses are usually
-calculated by taking the difference between frequencies in the decibel domain (dB 
-differencing). Once the echogram has been classified using multiple frequencies,
-scatterer density is estimated by echo-integrating at a single frequency using the 
+calculated by substracting backscatter at two different frequencies in the decibel domain 
+("dB differencing"). Once the echogram has been classified using multifrequency information,
+scatterer density is estimated by echo-integrating at a single frequency, using the 
 relationship 
 
 $s_v = \langle \sigma_{bs} \rangle n,$ (1)
 
 where $s_v$ is the volume backscattering coefficient, $\langle \sigma_{bs} \rangle$ is the
-average backscattering cross section of one scatterer, and $n$ is their numerical density.
+average backscattering cross section of a single scatterer, and $n$ is their numerical density.
 
 ### The Inverse Approach
 The inverse approach relies on the same theory and assumptions, but instead of classifying 
-first using multiple frequencies and then integrating using only one, it does both at 
-the 
-same time using all available frequencies. Mathematically, if we have a vector $\mathbf{s}_v$
-of backscatter at multiple frequencies and a matrix $\Sigma$ of backscattering cross-sections,
-where the $i,j^{th}$ entry holds $\langle \sigma_{bs} \rangle$ for species $j$ at frequency
-$i$, then solving the inverse problem means finding the vector of scatterer densities
-$\mathbf{n} \ge 0$ which solves the equation 
+first using multiple frequencies and then integrating using only one, it does both at the 
+same time, using all frequencies available. Mathematically, if we have a vector of 
+backscatter at multiple frequencies $\mathbf{s}_v$, and a matrix $\Sigma$ of backscattering
+cross-sections, where the $i,j^{th}$ entry holds $\langle \sigma_{bs} \rangle$ for species
+$j$ at frequency $i$, then solving the inverse problem means finding the vector of scatterer
+densities $\mathbf{n} \ge 0$ that solves the equation 
 
 $\mathbf{s}_v = \Sigma \mathbf{n}.$ (2)
 
 The inverse approach has several advantages over the classify-then-integrate approach:
+
 * It uses all available frequency information to integrate, in theory giving a more robust estimate of animal density than single-frequency integration.
 * It extends naturally from a small number of narrowband frequencies to broadband spectra, or a mixture of the two.
 * It can handle mixtures of different scatterers, a situation where dB differencing struggles.
@@ -66,12 +66,12 @@ potentially difficult to quantify.
 ### Bayesian Inverse Modeling
 
 One way to address these challenges is to implement the inverse problem as a Bayesian
-statistical model. Like all inversion methods, a Bayesian approach handles species mixtures, uses all 
-available frequencies, and extends naturally to broadband signals. However, it has 
+statistical model. Like all inversion methods, a Bayesian approach handles species mixtures,
+uses all available frequencies, and extends naturally to broadband signals. However, it has 
 a few distinct advantages. The priors required for a Bayesian model provide a rigorous
-way to incorporate assumptions, ecological knowledge, and/or information from direct 
+way to incorporate assumptions, ecological knowledge, and/or data from direct 
 sampling. Good priors provide the inverse model with additional information, improving
-the quality of the solution and allowing even underdetermined  problems to be solved.
+the quality of the solution and allowing even underdetermined problems to be solved.
 Bayesian models can incorporate multiple sources of uncertainty and propagate them
 through to the solution, increasing the robustness ofthe results: a well-specified 
 model should not produce solutions that are simultaneously wrong and confident.
@@ -86,10 +86,9 @@ acoustic data.
 
 ProbabilisticEchoInversion.jl is a Julia package, so if you have not installed the Julia 
 programming language, that's the first thing to do. You can download the latest version
-it for free from the [official website](https://julialang.org/downloads/). Even better,
+for free from the [official website](https://julialang.org/downloads/). Even better,
 use the [Juliaup installer/version manager](https://github.com/JuliaLang/juliaup), which 
-makes it much easier to upgrade when new Julia versions are released, and to maintain 
-multiple Julia installations on your computer.
+makes it much easier to upgrade when new Julia versions are released.
 
 You can work with Julia files in any text editor, but for a nice integrated experience,
 we can recommend [Visual Studio Code](https://code.visualstudio.com/) with the 
@@ -150,9 +149,9 @@ three-dimensional.
 If your data are already stored this way, for instance in a NetCDF or .mat file, it will
 be easy to convert them to a `DimArray` (refer to the
 [DimensionalData.jl documentation](https://rafaqz.github.io/DimensionalData.jl/stable/course/)
-for how to do that). If your data are stored as a table in "long" format, as is typical
+for details). If your data are stored as a table in "long" format, as is typical
 for .CSV exports from Echoview, you will need to do some reshaping first. This package
-provides a function `unstack_echogram` to do that for you.
+provides a function `unstack_echogram` to take care of that reshaping.
 
 First, load the required packages.
 ```julia
@@ -161,8 +160,10 @@ using CSV, DataFrames
 using DimensionalData, DimensionalData.Dimensions
 ```
 
-There are five comma-delimited data files, one for each frequency. We read them in, add a
-`frequency` column to each one, and use `vcat` to stack them all into a single `DataFrame`.
+This tutorial contains five comma-delimited data files, one for each frequency. We read
+them in, add a `frequency` column to each one, and use `vcat` to stack them all into a
+single `DataFrame`.
+
 ```julia
 freqs = [18, 38, 70, 120, 200]
 echo_df = map(freqs) do f
@@ -185,25 +186,31 @@ needs to have at least four columns:
 The names of these columns are passed to `unstack_echogram` as the second through
 fifth arguments, respectively. In this example, the data files are standard .csv
 exports from Echoview, and the relevant column names are:
+
 ```julia
 echo = unstack_echogram(echo_df, :Dist_M, :Layer_depth_min, :frequency, :Sv_mean)
 ```
+
 By default, the axes of `echo` will be named `X`, `Y`, and `F`. If you'd like to 
 define your own dimensions, this is easy to do with the `@dim` macro from
 `DimensionalData.Dimensions`. You can then supply them in the optional final
 three arguments to `unstack_echogram` and they will be applied to the 
 `DimArray` it returns.
+
 ```julia
 @dim Z YDim "Depth (m)"
 @dim D XDim "Distance (km)"
 echo = unstack_echogram(echo_df, :Dist_M, :Layer_depth_min, :frequency, :Sv_mean, D, Z)
 ```
+
 It is now easy to manipulate the multifrequency echogram, for instance by selecting a 
 slice by frequency and plotting it. Refer to the DimensionalData.jl docs to learn more
 about how to slice and dice `DimArrays`.
+
 ```julia
 heatmap(echo[F(At(120))], yflip=true)
 ```
+
 ![Echogram of example data at 120 kHz](https://github.com/ElOceanografo/ProbabilisticEchoInversion.jl/blob/main/examples/echogram.png?raw=true)
 
 ### Defining the model
@@ -234,47 +241,52 @@ A very simple inverse model is defined below.
     # Compare observed to predicted backscatter
     data.backscatter .~ Normal.(μ, fill(ϵ, nfreq))
 end
-
 ```
-To work with APES, your model function must accept two arguments. The first, `data`, 
-contains the observed acoustic data. It will be a `NamedTuple` with fields named `coords`,
-`freqs`, and `backscatter` that gets generated automatically for each acoustic cell When
-you call the `apes` function to actually run the analysis. You can use any of these
-fields inside the model if you want, but `data.backscatter` is the most important, since
-it contains the actual observations.
 
-The second argument, `params` containins any constants or auxiliary information you want to
-pass to the model. It will typically be a `NamedTuple`, but can be any type of object. If
-your model doesn't need any other info, you can just supply an empty tuple `()`.
-Here, `params` is going to hold a single item, a matrix of target strengths (TS).
+To work with APES, your model function must take two arguments. The first, `data`, is a
+`NamedTuple` containing acoustic data and metadata from a single cell. These data
+tuples will be generated automatically when you run the analysis using the
+`apes` function (described below), and will contain three fields, all accessible using
+dot-notation:
+
+* `data.backscatter` : Vector of backscatter values (in whatever units you defined your `echo` array)
+* `data.freqs` : Vector of frequencies at which `backscatter` was recorded
+* `data.coords` : Spatial/temporal coordinates of the cell within the `echo` array
+
+You can use any of these fields inside the model, but `data.backscatter` is the only one 
+you *must* use, since it contains the actual observations.
+
+The second argument, `params` is for any constants or auxiliary information you want to
+pass to the model. It will typically be a `NamedTuple`, but can be any data type you want.
+If your model doesn't need any other info, just supply an empty tuple `()`.  Here, we'll
+use `params` to hold a single item, a matrix of target strengths (TS).
 
 This model assumes a fixed number of scattering classes are present, each with a known
 TS spectrum. It puts a vague prior on their log-densities, and assumes a single error
 variance for all frequencies. 
 
-> ⚠ Note that this model is defined in the logarithmic domain - that is, the scatterer
-> densities are written as log-densities, and the observed data are assumed to be 
-> decibel-valued mean volume backscattering strengths ($S_v$) instead of linear mean
-> volume backscattering coefficients ($s_v$). While not strictly required, defining
-> your models this way is a *really good idea*. The small absolute values and wide
-> ranges of both scatterer densities and observed backscatter means that linear-domain
-> models often have problems with floating-point precision that can manifest in
-> inefficient and/or incorrect inference.
+!!! info "Write models in the log domain" Note that this model is defined in the logarithmic domain - that is, the scatterer densities are written as log-densities, and the observed data are assumed to be decibel-valued mean volume backscattering strengths ($S_v$) instead of linear mean volume backscattering coefficients ($s_v$). While not strictly required, defining your models this way is a *really good idea*. The small absolute values and wide ranges of both scatterer densities and observed backscatter means that linear-domain models often have problems with floating-point precision that can manifest in inefficient and/or incorrect inference.
 
-The last task to set up our model is to choose our candidate scatterers and set up
-the TS matrix we are going to pass to the model via `params`. A research trawl performed
-at this location found a mixture of Alaska pollock (*Gadus chalcogrammus*), unidentified
-lanternfish, and Pacific glass shrimp (*Pasiphaea pacifica*). We will assume these were
-the main scatterers present and define three TS spectra at our five frequencies. We then 
-concatenate them into a matrix and pack it into our named tuple of parameters.
+The last step in setting up our model is to choose our candidate scatterers and construct
+the TS matrix. A research trawl performed at this location found a mixture of Alaska
+pollock (*Gadus chalcogrammus*), unidentified lanternfish, and Pacific glass shrimp
+(*Pasiphaea pacifica*). We will assume these were the main scatterers present and define
+three plausible TS spectra at our five frequencies. We then concatenate them into a matrix
+and wrap it in a named tuple.
 
 ```julia
-TS_shrimp = [-100, -90, -82, -76.2, -73.7]
 TS_pollock = [-34.6, -35.0, -35.6, -36.6, -38.5]
 TS_myctophid = [-73.0, -58.0, -65, -67.2, -70.0]
+TS_shrimp = [-100, -90, -82, -76.2, -73.7]
 TS = [TS_pollock TS_myctophid TS_shrimp]
 params = (; TS)
+
+plot(freqs, TS, marker=:o, label=["Pollock" "Myctophid" "Shrimp"],
+    xlabel="Frequency (kHz)", ylabel="TS (dB re m⁻²)")
 ```
+
+![TS spectra of pollock, myctophids, and shrimp](https://github.com/ElOceanografo/ProbabilisticEchoInversion.jl/blob/main/examples/ts.png?raw=true)
+
 
 ### Running the model
 
@@ -302,8 +314,8 @@ that shares the first two dimensions as `echo`, so they are also easy to manipul
 plot. For instance, arrays of posterior means and standard deviations can be obtained this way,
 
 ```julia
-post_mean = passmissing(mean).(solution_mcmc)
-post_mean = passmissing(std).(solution_mcmc)
+post_mean = passmissing(chn -> mean(Array(chn), dims=2)).(solution_mcmc);
+post_cv = passmissing(chn -> cv(Array(chn), dims=2)).(solution_mcmc);
 ```
 
 where we use `passmissing` to deal with the fact that some of the result cells contain
@@ -326,8 +338,8 @@ sizes in Barnabas Trough, south of Kodiak Island.
 
 ## Using, Citing, and Contributing
 This software was developed by Sam Urmy at NOAA's Alaska Fisheries Science Center. As a 
-product of the U.S. Government, it is free for anyone to use under a Creative Commons CC0
-license. 
+product of the U.S. Government, it is free for anyone to use under a public-domain
+Creative Commons CC0 license. 
 
 ProbabilisticEchoInversion.jl has been tested and peer-reviewed, but should still be
 considered research-grade beta software rather than fully production-ready. If you try 
@@ -338,8 +350,8 @@ Pull requests are welcome, both for code and documentation!
 Finally, if you do use APES in your own work, please cite the following publication:
 
 Urmy, De Robertis, and Bassett (2023). A Bayesian inverse approach to identify and quantify
-organisms from fisheries acoustic data. ICES Journal of Marine Science x (x), doi:x
-
+organisms from fisheries acoustic data. *ICES Journal of Marine Science*, 
+https://doi.org/10.1093/icesjms/fsad102
 
 ## API
 
