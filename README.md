@@ -11,11 +11,12 @@ one or more types of scatterers, this package will help you infer 1) **what** th
 call this approach Automatic Probabilistic Echo Solving, or APES.
 
 Refer to the [documentation](https://ElOceanografo.github.io/ProbabilisticEchoInversion.jl/stable/) 
-for more details on how to use the package. Several fully-worked examples on both simulated and 
-real fisheries acoustic data can also be found in the 
+for more details on how to use the package. Several fully-worked examples on both simulated 
+and real fisheries acoustic data can also be found in the 
 [APES Examples](https://github.com/ElOceanografo/APESExamples) repository.
 
 If you use this package in your own research, please cite the following publication:
 
 Urmy, De Robertis, and Bassett (2023). A Bayesian inverse approach to identify and quantify
-organisms from fisheries acoustic data. ICES Journal of Marine Science x (x), doi:x
+organisms from fisheries acoustic data. *ICES Journal of Marine Science*, 
+https://doi.org/10.1093/icesjms/fsad102
