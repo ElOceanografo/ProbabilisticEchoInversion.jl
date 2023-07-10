@@ -96,7 +96,7 @@ we can recommend [Visual Studio Code](https://code.visualstudio.com/) with the
 [Pluto](https://plutojl.org/).
 
 Once you have Julia installed, open the Julia command line (a.k.a. the read-evaluate-print-loop,
-or REPL). While not required, it is easy and highly recommended to set up a local environment[^1] 
+or REPL). While not required, it is easy and highly recommended to set up a local environment 
 for each of your projects. To do that for this tutorial, run the following commands:
 
 ```julia-repl
@@ -115,20 +115,16 @@ julia> ]
 (APESTutorial) pkg>
 ```
 
-Install the package to this new project environment from GitHub by running the following
+Install the package to this new project environment by running the following
 command:
 
 ```julia-repl
-(APESTutorial) pkg> add ProbabilisticEchoInversion.jl
+(APESTutorial) pkg> add ProbabilisticEchoInversion
 ```
 
-Once it has downloaded and precompiled, you can exit the package manager by hitting backspace.
-To run the rest of this tutorial yourself, you'll need the data files located
-[here](https://github.com/ElOceanografo/ProbabilisticEchoInversion.jl/tree/main/examples).
-Download them to the project directory you just created. You can also download the `example.jl`
-script, which contains all the following code in one place.
-
-[^1] You don't strictly need to create a local environment, and can install 
+> **Note** **: Using local environments**
+> 
+> You don't strictly need to create a local environment, and can install 
 ProbabilisticEchoInversion into the top-level Julia environment (i.e., `(@v1.9)` instead 
 of `APESTutorial`). This will make it available automatically for all projects. However,
 the more packages you install in the top-level environment, the more likely you are to end
@@ -136,6 +132,12 @@ up with conflicting versions and dependencies. In our experience, working with l
 environments is *much* easier in the long run--and as a pleasant side effect, it makes it 
 much easier to reproduce your analyses, since all the precise package versions you used
 are recorded automatically in the Project.toml and Manifest.toml files.
+
+Once it has downloaded and precompiled, you can exit the package manager by hitting backspace.
+To run the rest of this tutorial yourself, you'll need the data files located
+[here](https://github.com/ElOceanografo/ProbabilisticEchoInversion.jl/tree/main/examples).
+Download them to the project directory you just created. You can also download the `example.jl`
+script, which contains all the following code in one place.
 
 ### Loading and arranging your data
 
@@ -265,7 +267,9 @@ This model assumes a fixed number of scattering classes are present, each with a
 TS spectrum. It puts a vague prior on their log-densities, and assumes a single error
 variance for all frequencies. 
 
-!!! info "Write models in the log domain" Note that this model is defined in the logarithmic domain - that is, the scatterer densities are written as log-densities, and the observed data are assumed to be decibel-valued mean volume backscattering strengths ($S_v$) instead of linear mean volume backscattering coefficients ($s_v$). While not strictly required, defining your models this way is a *really good idea*. The small absolute values and wide ranges of both scatterer densities and observed backscatter means that linear-domain models often have problems with floating-point precision that can manifest in inefficient and/or incorrect inference.
+> **Note** **: Writing models in the log-domain**
+>
+> Note that this model is defined in the logarithmic domain - that is, the scatterer densities are written as log-densities, and the observed data are assumed to be decibel-valued mean volume backscattering strengths ($S_v$) instead of linear mean volume backscattering coefficients ($s_v$). While not strictly required, defining your models this way is a *really good idea*. The small absolute values and wide ranges of both scatterer densities and observed backscatter means that linear-domain models often have problems with floating-point precision that can manifest in inefficient and/or incorrect inference.
 
 The last step in setting up our model is to choose our candidate scatterers and construct
 the TS matrix. A research trawl performed at this location found a mixture of Alaska
