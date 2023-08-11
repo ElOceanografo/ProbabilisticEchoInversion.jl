@@ -22,4 +22,5 @@ makedocs(;
 deploydocs(;
     repo="github.com/ElOceanografo/ProbabilisticEchoInversion.jl",
     devbranch="main",
+    versions=["stable" => "v^"],
 )
