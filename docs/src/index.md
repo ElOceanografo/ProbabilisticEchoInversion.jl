@@ -5,8 +5,8 @@ CurrentModule = ProbabilisticEchoInversion
 # ProbabilisticEchoInversion.jl
 ## Introduction
 
-Welcome to the documentation for ocumentation for 
-[ProbabilisticEchoInversion](https://github.com/user/ProbabilisticEchoInversion.jl)!
+Welcome to the documentation for 
+[ProbabilisticEchoInversion](https://github.com/ElOceanografo/ProbabilisticEchoInversion.jl)!
 
 This package is designed to solve the "inverse problem" for acoustic backscatter at
 multiple frequencies in a Bayesian statistical framework. In other words, given observed 
