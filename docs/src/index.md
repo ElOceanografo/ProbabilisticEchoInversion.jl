@@ -36,7 +36,7 @@ calculated by substracting backscatter at two different frequencies in the decib
 scatterer density is estimated by echo-integrating at a single frequency, using the 
 relationship 
 
-$s_v = \langle \sigma_{bs} \rangle n,$ (1)
+$s_v = \langle \sigma_{bs} \rangle n,  \;\;\;\;\;\;(1)$
 
 where $s_v$ is the volume backscattering coefficient, $\langle \sigma_{bs} \rangle$ is the
 average backscattering cross section of a single scatterer, and $n$ is their numerical density.
@@ -50,7 +50,7 @@ cross-sections, where the $i,j^{th}$ entry holds $\langle \sigma_{bs} \rangle$ f
 $j$ at frequency $i$, then solving the inverse problem means finding the vector of scatterer
 densities $\mathbf{n} \ge 0$ that solves the equation 
 
-$\mathbf{s}_v = \Sigma \mathbf{n}.$ (2)
+$\mathbf{s}_v = \Sigma \mathbf{n}. \;\;\;\;\;\;(2)$
 
 The inverse approach has several advantages over the classify-then-integrate approach:
 
