@@ -2,6 +2,8 @@ using Distributed
 addprocs(exeflags="--project=$(Base.active_project())")
 
 using ProbabilisticEchoInversion
+using DataFrames
+
 @everywhere begin
     # using Pkg; Pkg.activate(".")
     using Test
@@ -11,7 +13,14 @@ using ProbabilisticEchoInversion
     using Turing
 end
 
-echogram = rand(X(0:0.1:2), Z(-10:1:0), F(30:42))
+echo_df = allcombinations(DataFrame, X=0:0.1:2, Z=-10:1:0, F=30:42)
+echo_df.backscatter .= rand.()
+echogram = unstack_echogram(echo_df, :X, :Z, :F, :backscatter)
+
+cell_match = map(eachrow(echo_df)) do row
+    echogram[X(At(row.X)), Y(At(row.Z)), F(At(row.F))] == row.backscatter
+end
+@test all(cell_match)
 
 iterspectra(echogram)
 
