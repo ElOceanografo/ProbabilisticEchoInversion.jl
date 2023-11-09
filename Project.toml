@@ -1,7 +1,7 @@
 name = "ProbabilisticEchoInversion"
 uuid = "1f6a33d4-8dbe-4644-aee6-8f897f240d65"
 authors = ["Sam Urmy <sam.urmy@noaa.gov>"]
-version = "0.2.3"
+version = "0.2.4"
 
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
