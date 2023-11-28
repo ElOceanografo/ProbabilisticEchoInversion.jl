@@ -3,6 +3,7 @@ addprocs(exeflags="--project=$(Base.active_project())")
 
 using ProbabilisticEchoInversion
 using DataFrames
+using Random
 
 @everywhere begin
     # using Pkg; Pkg.activate(".")
@@ -12,6 +13,8 @@ using DataFrames
     using Statistics
     using Turing
 end
+
+Random.seed!(12345)
 
 echo_df = allcombinations(DataFrame, X=0:0.1:2, Z=-10:1:0, F=30:42)
 echo_df.backscatter .= rand.()
@@ -64,8 +67,12 @@ result = apes(echogram, examplemodel, MAPSolver(), params=par, distributed=true)
 @test size(result, 1) == size(echogram, 1)
 @test size(result, 2) == size(echogram, 2)
 
-mean.(result)
-cov.(result)
-var.(result)
-std.(result)
-cv.(result)
+for r in result
+    @test mean(r) == r.mean
+    @test cov(r) == r.cov
+    # @test mean(r) == r.optimizer.values
+    var(r)
+    std(r)
+    cv(r)
+end
+
