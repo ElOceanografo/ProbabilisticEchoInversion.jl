@@ -25,7 +25,7 @@ Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
 [compat]
 CSV = "0.10"
 DataFrames = "1"
-DataFramesMeta = "0.14"
+DataFramesMeta = "0.14, 0.15"
 DimensionalData = "0.24, 0.25"
 Distributed = "1.8"
 Distributions = "0.25"
