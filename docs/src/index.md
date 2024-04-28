@@ -122,11 +122,17 @@ command:
 (APESTutorial) pkg> add ProbabilisticEchoInversion
 ```
 
+To recreate the graphics, install Plots.jl and ColorSchemes.jl the same way:
+
+```julia-repl
+(APESTutorial) pkg> add Plots ColorSchemes
+```
+
 > **Note** **: Using local environments**
 > 
 > You don't strictly need to create a local environment, and can install ProbabilisticEchoInversion into the top-level Julia environment (i.e., `(@v1.9)` instead of `APESTutorial`). This will make it vailable automatically for all projects. However, the more packages you install in the top-level environment, the more likely you are to end up with conflicting versions and dependencies. In our experience, working with local environments is *much* easier in the long run--and as a pleasant side effect, it makes it much easier to reproduce your analyses, since all the precise package versions you used are recorded automatically in the Project.toml and Manifest.toml files.
 
-Once it has downloaded and precompiled, you can exit the package manager by hitting backspace.
+Once everything has downloaded and precompiled, you can exit the package manager by hitting backspace.
 To run the rest of this tutorial yourself, you'll need the data files located
 [here](https://github.com/ElOceanografo/ProbabilisticEchoInversion.jl/tree/main/examples).
 Download them to the project directory you just created. You can also download the `example.jl`
@@ -221,7 +227,6 @@ A very simple inverse model is defined below.
 
 ```julia
 @model function examplemodel(data, params)
-
     nfreq, nspp = size(params.TS)
     Σ = exp10.(params.TS ./ 10)
 
