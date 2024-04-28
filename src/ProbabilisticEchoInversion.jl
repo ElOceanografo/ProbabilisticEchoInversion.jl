@@ -150,7 +150,7 @@ function Statistics.cor(s::MAPSolution)
 end
 Statistics.var(s::MAPSolution) = diag(cov(s))
 Statistics.std(s::MAPSolution) = sqrt.(var(s))
-cv(s; kwargs...) = std(s; kwargs...) ./ mean(s; kwargs...)
+cv(s; kwargs...) = std(s; kwargs...) ./ abs.(mean(s; kwargs...))
 StatsBase.coef(s::MAPSolution) = coef(s.optimizer)
 
 function solve(data, model::Function, solver::MAPSolver, params=())
