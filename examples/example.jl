@@ -23,13 +23,16 @@ savefig(joinpath(@__DIR__, "echogram.png"))
 @model function examplemodel(data, params)
     nfreq, nspp = size(params.TS)
     Σ = exp10.(params.TS ./ 10)
-    # priors
-    logn ~ arraydist(Normal.(zeros(nspp), fill(3, nspp)))
+
+    # define priors
+    logn ~ arraydist(Normal.(zeros(nspp), fill(3, nspp))) # scatterer log-densities
     ϵ ~ Exponential(1.0)
+
     # Predict Sv based on scatterer density and TS
     n = exp10.(logn)
     μ = 10log10.(Σ * n)
-    # Compare observed to predicted
+
+    # Compare observed to predicted backscatter
     data.backscatter .~ Normal.(μ, fill(ϵ, nfreq))
 end
 
@@ -45,10 +48,43 @@ plot(freqs, TS, marker=:o, label=["Pollock" "Myctophid" "Shrimp"],
 savefig(joinpath(@__DIR__, "ts.png"))
 
 solution_mcmc = apes(echo, examplemodel, MCMCSolver(), params=params);
-post_mean = passmissing(chn -> mean(Array(chn), dims=2)).(solution_mcmc);
-post_cv = passmissing(chn -> cv(Array(chn), dims=2)).(solution_mcmc);
+
+function posterior_statistic(stat, solution, var)
+    f = passmissing(chn -> mapslices(stat, Array(group(chn, var)), dims=1))
+    return f.(solution)
+end
+pm = posterior_statistic(mean, solution_mcmc, :logn);
+vec(pm)
+size(pm)
+pm = reduce(hcat, vec(pm))
+replace(pm, missing)
+
+post_mean = passmissing(chn -> mean(Array(chn), dims=1)).(solution_mcmc);
+post_cv = passmissing(chn -> cv(Array(chn), dims=1)).(solution_mcmc);
+
+post_pollock = map(passmissing(m -> m[1]), post_mean)
+post_myctophid = map(passmissing(m -> m[2]), post_mean)
+post_shrimp = map(passmissing(m -> m[3]), post_mean)
+
+post_cv_pollock = map(passmissing(m -> m[1]), post_cv)
+post_cv_myctophid = map(passmissing(m -> m[2]), post_cv)
+post_cv_shrimp = map(passmissing(m -> m[3]), post_cv)
+
+plot(
+    heatmap(post_pollock),
+    heatmap(post_myctophid),
+    heatmap(post_shrimp),
+    yflip=true, clims=(-6, 3)
+)
+plot(
+    heatmap(post_cv_pollock, c=:viridis),
+    heatmap(post_cv_myctophid, c=:viridis),
+    heatmap(post_cv_shrimp, c=:viridis),
+    yflip=true, clims=(0, 10)
+)
+
 
 solution_map = apes(echo, examplemodel, MAPSolver(), params=params);
-post_mean = passmissing(mean).(solution_map);
-post_cv = passmissing(cv).(solution_map);
+post_mean_map = passmissing(mean).(solution_map);
+post_cv_map = passmissing(cv).(solution_map);
 
