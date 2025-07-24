@@ -211,9 +211,16 @@ spectrum. The iterator yields `NamedTuples` with three fields:
 function iterspectra(echogram::DimArray, freqdim=:F)
     freqs = collect(dims(echogram, freqdim))
     dd = otherdims(echogram, freqdim)
+    ddnames = name.(dd)
     pointskeys = zip(DimPoints(dd), DimKeys(dd))
-    itr = ((coords=tup[1], freqs=freqs, backscatter=vec(@view echogram[tup[2]...]))
-        for tup in pointskeys)
+    itr = (
+        (
+            coords=NamedTuple(zip(ddnames, tup[1])), 
+            freqs=freqs,
+            backscatter=vec(@view echogram[tup[2]...])
+        )
+        for tup in pointskeys
+    )
     return itr
 end
 
