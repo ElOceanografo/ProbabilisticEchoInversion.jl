@@ -251,11 +251,7 @@ dot-notation:
 
 * `data.backscatter` : Vector of backscatter values (in whatever units you defined your `echo` array)
 * `data.freqs` : Vector of frequencies at which `backscatter` was recorded
-* `data.coords` : Spatial/temporal coordinates of the cell within the `echo` array, as a
-`NamedTuple` with values for the (non-frequency) dimensions of the echogram.
-In this tutorial, the echogram has depth and distance dimensions named `Z` and `D`, so 
-`data.coords` would be something like e.g. `(Z = 120.0, D = 6.5)`, indicating that
-`data.backscatter` was recorded at a depth of 120 m, 6.5 km along the ship's track.
+* `data.coords` : Spatial/temporal coordinates of the cell within the `echo` array, as a `NamedTuple` with values for the (non-frequency) dimensions of the echogram.  In this tutorial, the echogram has depth and distance dimensions named `Z` and `D`, so `data.coords` would be something like e.g. `(Z = 120.0, D = 6.5)`, indicating that `data.backscatter` was recorded at a depth of 120 m, 6.5 km along the ship's track.
 
 You can use any of these fields inside the model, but `data.backscatter` is the only one 
 you *must* use, since it contains the actual observations. The frequencies and coordinates
