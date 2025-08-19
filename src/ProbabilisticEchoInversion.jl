@@ -167,7 +167,7 @@ function solve(data, model::Function, solver::MAPSolver, params=())
         close(io)
     end
     H = Symmetric(calculate_hessian(opt, solver))
-    μ = opt.optim_result.minimizer
+    μ = opt.values
     try
         C = isposdef(H) ? inv(H) : pinv(H)
         return MAPSolution(μ, C, opt)

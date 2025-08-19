@@ -70,7 +70,7 @@ result = apes(echogram, examplemodel, MAPSolver(), params=par, distributed=true)
 for r in result
     @test mean(r) == r.mean
     @test cov(r) == r.cov
-    # @test mean(r) == r.optimizer.values
+    @test mean(r) == r.optimizer.values
     var(r)
     std(r)
     cv(r)
