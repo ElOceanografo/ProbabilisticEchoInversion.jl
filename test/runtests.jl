@@ -1,8 +1,9 @@
 using Distributed
-addprocs(exeflags="--project=$(Base.active_project())")
+addprocs(2, exeflags="--project=$(Base.active_project())")
 
 using ProbabilisticEchoInversion
 using DataFrames
+using LinearAlgebra
 using Random
 
 @everywhere begin
@@ -19,6 +20,7 @@ Random.seed!(12345)
 echo_df = allcombinations(DataFrame, X=0:0.1:2, Z=-10:1:0, F=30:42)
 echo_df.backscatter .= rand.()
 echogram = unstack_echogram(echo_df, :X, :Z, :F, :backscatter)
+echogram = disallowmissing(echogram)
 
 cell_match = map(eachrow(echo_df)) do row
     echogram[X(At(row.X)), Y(At(row.Z)), F(At(row.F))] == row.backscatter
@@ -40,8 +42,7 @@ TS = randn(size(echogram, :F), 4)
     logn ~ filldist(Normal(0, 1), nspp)
     n = exp.(logn)
     η ~ Exponential(0.1)
-    ϵ = data.backscatter .* η
-    data.backscatter .~ Normal.(Σ * n, ϵ)
+    data.backscatter ~ MvNormal(Σ * n, η^2 * I)
 end
 
 par = (TS = TS,)
