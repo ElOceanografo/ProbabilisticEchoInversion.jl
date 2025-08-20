@@ -53,6 +53,7 @@ mod = examplemodel(data, par)
 solver = MCMCSolver(nsamples=100, kwargs=(progress=false,))
 
 solve(data, examplemodel, MCMCSolver(verbose=true), par)
+solve(data, examplemodel, MCMCSolver(verbose=false), par)
 solve(data, examplemodel, MCMCSolver(parallel=MCMCThreads(), nchains=4), par)
 solve(data, examplemodel, solver, par)
 

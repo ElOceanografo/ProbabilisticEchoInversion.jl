@@ -5,9 +5,9 @@ using CSV
 using DataFrames, DataFramesMeta
 using DimensionalData, DimensionalData.Dimensions
 @reexport using Turing
-using Optim
+using DifferentiationInterface
+using OptimizationOptimJL
 using ForwardDiff
-using FiniteDiff
 using LinearAlgebra
 using Statistics, StatsBase
 using Distributed
@@ -30,172 +30,9 @@ export AbstractSolver,
 @dim F YDim "Frequency (kHz)"
 
 abstract type AbstractSolver end
-
-"""
-    MCMCSolver([;sampler, parallel, nsamples, nchains; kwargs, verbose])
-
-Construct an `MCMCSolver`, specifying how to invert a probabilistic backscattering
-model using Markov-chain Monte Carlo. By default uses the no-U-turn sampler with 
-acceptance rate 0.8 and collects 1000 samples. See Turing.jl documentation for more
-information on options for MCMC sampling.
-"""
-Base.@kwdef struct MCMCSolver <: AbstractSolver
-    sampler = NUTS(0.8)
-    parallel = MCMCSerial()
-    nsamples = 1000
-    nchains = 1
-    kwargs = (progress=false,)
-    verbose = false
-end
-
-
-"""
-    MAPSolver([;optimizer, options])
-
-Construct a `MAPSolver`, specifying how to invert a probabilistic backsattering
-model using maximum a-posteriori optimization.  Default optimizer is LBFGS. See
-Turing.jl and Optim.jl documentation for more information on available solvers
-and options.
-"""
-Base.@kwdef struct MAPSolver <: AbstractSolver
-    optimizer = LBFGS()
-    options = Optim.Options()
-    hessian = :forwarddiff
-    verbose=false
-
-    function MAPSolver(optimizer, options, hessian, verbose)
-        if hessian in [:forwarddiff, :finitediff]
-            return new(optimizer, options, hessian, verbose)
-        else
-            throw(ArgumentError("`hessian` must be either :forwarddiff or :finitediff"))
-        end
-    end
-end
-
-"""
-    MAPMCMCSolver([;optimizer, options])
-
-Construct an `MAPMCMCSolver`, specifying how to invert a probabilistic backscattering
-model using a combination of maximum a posteriori optimization and Markov-chain Monte 
-Carlo. This simply means that an optimization routine finds the MAP point estimate of
-the parameters, which is then used as the starting point for the MCMC run.
-
-Arguments correspond exactly to the ones for `MAPSolver` and `MCMCSolver`; refer to 
-their documentation for details.
-"""
-Base.@kwdef struct MAPMCMCSolver <: AbstractSolver
-    sampler = NUTS(0.8)
-    parallel = MCMCSerial()
-    nsamples = 1000
-    nchains = 1
-    kwargs = (progress=false,)
-    optimizer = LBFGS()
-    options = Optim.Options()
-    verbose=false
-end
-
-
-"""
-    solve(data, model, solver[, params])
-
-Run the probabilistic inverse model defined by `model` on the acoustic backscatter
-spectrum in `data`, using `solver` as the inference engine.
-"""
-function solve(data, model::Function, solver::MCMCSolver, params=())
-    m = model(data, params)
-    if solver.verbose
-        return sample(m, solver.sampler, solver.parallel, solver.nsamples, 
-            solver.nchains; solver.kwargs...)
-    end
-    io = IOBuffer()
-    logger = Logging.SimpleLogger(io, Logging.Error)
-    chain = Logging.with_logger(logger) do
-        sample(m, solver.sampler, solver.parallel, solver.nsamples, 
-            solver.nchains; solver.kwargs...)
-    end
-    flush(io)
-    close(io)
-    return chain
-end
-
-function calculate_hessian(opt, solver)
-    if solver.hessian == :forwarddiff
-        return ForwardDiff.hessian(opt.f, opt.optim_result.minimizer)
-    elseif solver.hessian == :finitediff
-        return ForwardDiff.hessian(opt.f, opt.optim_result.minimizer)
-    end
-end
-
-struct MAPSolution{TM,TV,TO}
-    mean::TM
-    cov::TV
-    optimizer::TO
-end
-
-function Base.show(io::IO, s::MAPSolution)
-    print(io, s.optimizer.values)
-end
-
-function Base.show(io::IO, m::MIME"text/plain", s::MAPSolution)
-    print(io, "MAPSolution with log-probability $(round(s.optimizer.lp, digits=2))")
-    print(io, " and modal values:\n")
-    show(io, m, s.optimizer.values)
-end
-
-Statistics.mean(s::MAPSolution) = s.mean
-Statistics.cov(s::MAPSolution) = s.cov
-function Statistics.cor(s::MAPSolution)
-    D = diagm(1 ./ sqrt.(diag(s.cov)))
-    return D * cov(s) * D
-end
-Statistics.var(s::MAPSolution) = diag(cov(s))
-Statistics.std(s::MAPSolution) = sqrt.(var(s))
-cv(s; kwargs...) = std(s; kwargs...) ./ abs.(mean(s; kwargs...))
-StatsBase.coef(s::MAPSolution) = coef(s.optimizer)
-
-function solve(data, model::Function, solver::MAPSolver, params=())
-    m = model(data, params)
-    if solver.verbose 
-        opt = optimize(m, MAP(), solver.optimizer, solver.options)
-    else
-        io = IOBuffer()
-        logger = Logging.SimpleLogger(io, Logging.Error)
-        opt = Logging.with_logger(logger) do
-            optimize(m, MAP(), solver.optimizer, solver.options)
-        end
-        flush(io)
-        close(io)
-    end
-    H = Symmetric(calculate_hessian(opt, solver))
-    μ = opt.values
-    try
-        C = isposdef(H) ? inv(H) : pinv(H)
-        return MAPSolution(μ, C, opt)
-    catch
-        C = diagm(fill(Inf, size(H, 1)))
-        return MAPSolution(μ, C, opt)
-    end
-end
-
-function solve(data, model::Function, solver::MAPMCMCSolver, params=())
-    m = model(data, params)
-    if solver.verbose
-        opt = optimize(m, MAP(), solver.optimizer, solver.options)
-        return sample(m, solver.sampler, solver.parallel, solver.nsamples, solver.nchains;
-            init_theta = opt.values.array, solver.kwargs...)
-    else
-        io = IOBuffer()
-        logger = Logging.SimpleLogger(io, Logging.Error)
-        chain = Logging.with_logger(logger) do
-            opt = optimize(m, MAP(), solver.optimizer, solver.options)
-            sample(m, solver.sampler, solver.parallel, solver.nsamples, solver.nchains;
-                init_theta=opt.values.array, solver.kwargs...)
-        end
-        flush(io)
-        close(io)
-        return chain
-    end
-end
+include("map_solver.jl")
+include("mcmc_solver.jl")
+include("mapmcmc_solver.jl")
 
 """
     iterspectra(echogram[, freqdim])
