@@ -88,7 +88,8 @@ ProbabilisticEchoInversion.jl is a Julia package, so if you have not installed t
 programming language, that's the first thing to do. You can download the latest version
 for free from the [official website](https://julialang.org/downloads/). Even better,
 use the [Juliaup installer/version manager](https://github.com/JuliaLang/juliaup), which 
-makes it much easier to upgrade when new Julia versions are released.
+makes it much easier to upgrade when new Julia versions are released. The current version
+of ProbabilisticEchoInversion.jl requires Julia v1.10 or higher.
 
 You can work with Julia files in any text editor, but for a nice integrated experience,
 we can recommend [Visual Studio Code](https://code.visualstudio.com/) with the 
@@ -110,7 +111,7 @@ julia> cd("APESTutorial")
 julia> ]
 
 # activate the current directory as project environment
-(@v1.9) pkg> activate .
+(@v1.10) pkg> activate .
 
 (APESTutorial) pkg>
 ```
@@ -239,7 +240,7 @@ A very simple inverse model is defined below.
     μ = 10log10.(Σ * n)
 
     # Compare observed to predicted backscatter
-    data.backscatter .~ Normal.(μ, fill(ϵ, nfreq))
+    data.backscatter ~ MvNormal(μ, fill(ϵ, nfreq))
 end
 ```
 
