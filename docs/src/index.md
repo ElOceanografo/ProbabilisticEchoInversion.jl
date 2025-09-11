@@ -314,17 +314,43 @@ takes just a few seconds.
 solution_map = apes(echo, examplemodel, MAPSolver(), params=params)
 ```
 
-In either case (MCMC chains or optimization fits) the results are returned in a `DimArray`
-that shares the first two dimensions as `echo`, so they are also easy to manipulate and 
-plot. For instance, arrays of posterior means and standard deviations can be obtained this way,
+Both `MCMCSolver` and `MAPsolver` can specify many different options for fine-tuning the 
+underlying sampling and optimization algorithms; refer to their docstrings for more info.
+
+### Working with model results
+
+In either case (MCMC chains or MAP optimizations) the results are returned in a `DimArray`
+that shares the first two dimensions as `echo`, so they retian their spatial reference and
+can be sliced and plotted as synthetic echograms.
+
+The package supplies a convenience function `summarize_posterior` to make it easier to
+extract information from the posterior results. It applies a summary function  to each
+cell in the array of posterior results returned by a call to `apes`. It returns a
+`DimStack`, each layer of which is a summary of a single model parameter.
 
 ```julia
-post_mean = passmissing(chn -> mean(Array(chn), dims=2)).(solution_mcmc);
-post_cv = passmissing(chn -> cv(Array(chn), dims=2)).(solution_mcmc);
+post_mean = summarize_posterior(mean, solution_mcmc)
+post_cv = summarize_posterior(cv, solution_mcmc)
 ```
 
-where we use `passmissing` to deal with the fact that some of the result cells contain
-MCMC chains and some are missing.
+By default, all parameters are summarized. If you only one a subset, specify them as
+strings or symbos via the optional `variables` argument. If you want to select an array-
+valued parameter without typing `["arr[1]", "arr[2]", "arr[3]"..."arr[1_000_000]"]`, you
+can ask for it with the `groups` argument as `groups=["arr"]`.
+
+All the basic summary statistics (`mean`, `var`, `std`, `cv`, `cov`) will work on MAP and 
+MCMC solutions.
+
+Once you have a summary `DimStack`, it is easy to convert to a `DataFrame` and save disk:
+
+```julia
+post_mean_df = DataFrame(post_mean)
+post_cv_df = DataFrame(post_cv)
+CSV.write("post_mean.csv", post_mean_df)
+CSV.write("post_cv.csv", post_cv_df)
+```
+
+
 
 ## More Advanced Examples
 
