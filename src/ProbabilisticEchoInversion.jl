@@ -7,6 +7,7 @@ using DimensionalData, DimensionalData.Dimensions
 @reexport using Turing
 using DifferentiationInterface
 using OptimizationOptimJL
+using NamedArrays
 using ForwardDiff
 using LinearAlgebra
 using Statistics, StatsBase
@@ -25,7 +26,8 @@ export AbstractSolver,
     apes,
     cv,
     unstack_echogram,
-    F
+    F,
+    summarize_posterior
 
 @dim F YDim "Frequency (kHz)"
 
@@ -167,4 +169,45 @@ function unstack_echogram(echo_df::DataFrame, xcol::Symbol, ycol::Symbol, fcol::
     echogram = cat(stack..., dims=3)
     return DimArray(echogram, (Y(y), X(x), F(freqs)))
 end
+
+_get_varnames(sol::Chains) = sol.name_map.parameters
+_get_varnames(sol::MAPSolution) = only(names(sol.optimizer.values))
+_get_varnames(sol::AbstractArray) = mapreduce(_get_varnames, union, sol)
+
+function _get_group_varnames(sol, group)
+    all_variables = _get_varnames(sol)
+    return filter(v -> startswith(string(v), string(group)*"["), all_variables)
+end
+
+function _get_group_varnames(sol, groups::AbstractArray)
+    group_variables = map(groups) do g
+        _get_group_varnames(sol, g)
+    end
+    return vcat(group_variables...)
+end
+
+Base.getindex(sol::MAPSolution, key) = sol.optimizer.values[Symbol(key)]
+
+_summarize(s::Chains, varname, f) = f(s[Symbol(varname)])
+_summarize(s::MAPSolution, varname, f) = f(s)[Symbol(varname)]
+
+regularize(sym) = Symbol(replace(string(sym),  "[" => "_", "]" => ""))
+
+function summarize_posterior(f::Function, sol; variables=[], groups=[], regularize_names=true)
+    variables = if isempty(variables) & isempty(groups)
+        _get_varnames(sol) # default: all variables
+    else
+        variables
+    end
+    group_variables = _get_group_varnames(sol, groups)
+    variables = union(variables, group_variables)
+    summaries = map(variables) do varname
+        f1 = s -> _summarize(s, varname, f)
+        map(passmissing(f1), sol)
+    end
+    stack_names = regularize_names ? regularize.(variables) : variables
+    return DimStack(summaries, name=stack_names)
+end
+
+
 end # module
