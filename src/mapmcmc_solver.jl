@@ -17,7 +17,7 @@ Base.@kwdef struct MAPMCMCSolver <: AbstractSolver
     nchains = 1
     optimizer = LBFGS()
     args = ()
-    kwargs = (;)
+    kwargs = (progress=false,)
     verbose=false
 end
 
