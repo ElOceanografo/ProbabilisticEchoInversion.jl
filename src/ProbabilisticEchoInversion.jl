@@ -193,6 +193,28 @@ _summarize(s::MAPSolution, varname, f) = f(s)[Symbol(varname)]
 
 regularize(sym) = Symbol(replace(string(sym),  "[" => "_", "]" => ""))
 
+"""
+    summarize_posterior(f, sol [; variables=[], groups=[], regularize=true])
+
+Apply a summary function `f` (e.g. `mean`, `std`, `cv`) to each cell in the array of
+posterior results returned by a call to `apes`. Returns a `DimStack`, each layer of which 
+is a summary of a model parameter.
+
+By default, all parameters are summarized. If you only one a subset, specify them as
+strings or symbos via the optional `variables` argument. If you want to select an array-
+valued parameter without typing `["arr[1]", "arr[2]", "arr[3]"..."arr[1_000_000]"]`, you
+can ask for it with the `groups` argument as `groups=["arr"]`.
+
+# Arguments
+- `f::Function` : Summarizer to apply to the posterior in each solution cell. Standard 
+statistics (`mean`, `var`, `std`, `cov`) will work with both MCMC and MAP results.
+- `sol::DimArray` : Output of a call to `apes`, containing posterior results.
+- `variables` : Vector of strings or symbols specifying a subset of the model parameters 
+to summarize. If left empty all variables are selected.
+- `groups` : Vector of group names, to make selecting vector-valued parameters easier.
+- `regularize::Bool` : Whether to regularize vector variable names by removing the 
+brackets. Makes accessing them in the returned `DimStack` easier.
+"""
 function summarize_posterior(f::Function, sol; variables=[], groups=[], regularize_names=true)
     variables = if isempty(variables) & isempty(groups)
         _get_varnames(sol) # default: all variables
