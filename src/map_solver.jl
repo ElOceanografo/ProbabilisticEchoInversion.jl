@@ -36,7 +36,11 @@ function Statistics.cor(s::MAPSolution)
     D = diagm(1 ./ sqrt.(diag(s.cov)))
     return D * cov(s) * D
 end
-Statistics.var(s::MAPSolution) = diag(cov(s))
+function Statistics.var(s::MAPSolution)
+    v = diag(cov(s))
+    v[v .< 0] .= NaN
+    return v
+end
 Statistics.std(s::MAPSolution) = sqrt.(var(s))
 cv(s; kwargs...) = std(s; kwargs...) ./ abs.(mean(s; kwargs...))
 StatsBase.coef(s::MAPSolution) = coef(s.optimizer)
@@ -56,11 +60,13 @@ function solve(data, model::Function, solver::MAPSolver, params=())
     end
     H = Symmetric(hessian(opt.f, solver.hess_ad, opt.optim_result.u))
     μ = opt.values
-    try
-        C = isposdef(H) ? inv(H) : pinv(H)
-        return MAPSolution(μ, C, opt)
+    μ_names = only(names(μ))
+    C = try
+        C = inv(H)
+        NamedArray(C, names=(μ_names, μ_names))
     catch
         C = diagm(fill(Inf, size(H, 1)))
-        return MAPSolution(μ, C, opt)
+        NamedArray(C, names=(μ_names, μ_names))
     end
+    return MAPSolution(μ, C, opt)
 end
