@@ -1,7 +1,7 @@
 name = "ProbabilisticEchoInversion"
 uuid = "1f6a33d4-8dbe-4644-aee6-8f897f240d65"
-authors = ["Sam Urmy <sam.urmy@noaa.gov>"]
 version = "0.4.0"
+authors = ["Sam Urmy <sam.urmy@noaa.gov>"]
 
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
@@ -43,7 +43,7 @@ ProgressMeter = "1"
 Reexport = "1"
 Statistics = "1"
 StatsBase = "0.33, 0.34"
-Turing = "0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33, 0.40"
+Turing = "0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33, 0.40, 0.42"
 julia = "1.10"
 
 [extras]
